@@ -1,0 +1,154 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+
+namespace 航班信息
+{
+    public partial class Flight : Form
+    {
+        public Flight()
+        {
+            InitializeComponent();
+        }
+
+        public static string constring = "Data Source=.;Initial Catalog=Ticket;Integrated Security=True";
+        public static SqlConnection connect = new SqlConnection(constring);
+
+        private void Flight_Load(object sender, EventArgs e)
+        {
+            binStarting();
+        }
+
+        public void binStarting()
+        {
+            try
+            {
+                connect.Open();
+                string sql = "select * from CityInfo";
+                SqlDataAdapter sda = new SqlDataAdapter(sql, connect);
+                DataSet ds = new DataSet();
+                sda.Fill(ds, "City");
+                cboStarting.DataSource = ds.Tables["City"];
+                cboStarting.DisplayMember = "CityName";
+                cboStarting.ValueMember = "Id";
+                sda.Fill(ds, "City2");
+                cboDestination.DataSource = ds.Tables["City2"];
+                cboDestination.DisplayMember = "CityName";
+                cboDestination.ValueMember = "Id";
+                cboStarting.Text = "请选择";
+                cboDestination.Text = "请选择";
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            finally
+            {
+                connect.Close();
+            }
+        }
+
+        private void btnQuery_Click(object sender, EventArgs e)
+        {
+
+            try
+            {
+                int id = Convert.ToInt32(this.cboStarting.SelectedValue);
+                int id2 = Convert.ToInt32(this.cboDestination.SelectedValue);
+                connect.Open();
+                string sql = "select A.FlightNo,B.Airways,A.LeaveTime,A.LandTime,A.Price from FlightInfo A inner join AirwaysInfo B on A.AirwaysId=B.Id where A.LeaveCity=" + id + " and A.Destination=" + id2 + "";
+                SqlDataAdapter sda = new SqlDataAdapter(sql, connect);
+                DataSet ds = new DataSet();
+                sda.Fill(ds, "Select");
+                DataView dv = new DataView(ds.Tables["Select"]);
+                this.dataGridView1.DataSource = dv;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            finally
+            {
+                connect.Close();
+            }
+        }
+
+        private void dataGridView1_Click(object sender, EventArgs e)
+        {
+            this.txtFlightNumber.Text= dataGridView1.SelectedRows[0].Cells["Column1"].Value.ToString();
+            this.txtAirline.Text = dataGridView1.SelectedRows[0].Cells["Column2"].Value.ToString();
+            this.txtStartingTime.Text= dataGridView1.SelectedRows[0].Cells["Column3"].Value.ToString();
+            this.txtArrivalTime.Text= dataGridView1.SelectedRows[0].Cells["Column4"].Value.ToString();
+            this.txtFares.Text = dataGridView1.SelectedRows[0].Cells["Column5"].Value.ToString();
+            this.txtStarting.Text = cboStarting.Text;
+            this.txtDestination.Text = cboDestination.Text;
+        }
+
+        public void Insert()
+        {
+            try
+            {
+                Random ran = new Random();
+                int i = ran.Next(100000, 1000000);
+                string flight = dataGridView1.SelectedRows[0].Cells["Column1"].Value.ToString();
+                int num = Convert.ToInt32(numericUpDown1.Value);
+                string t = dateTimePicker1.Value.ToString();
+                connect.Open();
+                string sql = "insert into OrderInfo(OrderId,FlightNo,LeaveDate,Number) values ('" + i + "','" + flight + "','" + t + "'," + num + ")";
+                SqlCommand command = new SqlCommand(sql, connect);
+                int a = command.ExecuteNonQuery();
+                if (a > 0)
+                {
+                    MessageBox.Show("预购成功！", "信息标题", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            finally
+            {
+                connect.Close();
+            }
+        }
+
+        private void btnReserve_Click(object sender, EventArgs e)
+        {
+            DialogResult dg = MessageBox.Show("是否确认预购？", "提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+            if (dg.Equals(DialogResult.OK))
+            {
+                if ((dateTimePicker1.Value >= DateTime.Today)&&(DateTime.Now < Convert.ToDateTime(this.txtStartingTime.Text)))
+                {
+                    Insert();
+                }
+                else if (dateTimePicker1.Value > DateTime.Now)
+                {
+                    Insert();
+                }
+                else
+                {
+                    MessageBox.Show("请重新选择！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            DialogResult dg = MessageBox.Show("是否确认退出？", "提示", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+            if (dg.Equals(DialogResult.OK))
+            {
+                this.Close();
+            }
+        }
+    }
+}
+
+
